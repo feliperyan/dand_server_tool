@@ -42,7 +42,7 @@ func spawnEvil() *beholder {
 }
 
 func (be *beholder) broadcast(msg PlayerMessage, close bool) {
-	if close {
+	if close { // using this method to close all connections as well as broadcasting messages
 		for _, p := range be.players {
 			err := p.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
@@ -52,10 +52,10 @@ func (be *beholder) broadcast(msg PlayerMessage, close bool) {
 	} else {
 		for _, p := range be.players {
 			if p.name != msg.Sender { // dont echo it to sender
-				err := p.conn.WriteMessage(websocket.TextMessage, getJSONPlayerMessage(msg))
-				if err != nil {
-					log.Println("write: ", err)
-				}
+				newMsg := msg
+				newMsg.Recipient = p.name
+				fmt.Println("whispering:", newMsg)
+				be.whisper(newMsg)
 			}
 
 		}
@@ -63,27 +63,6 @@ func (be *beholder) broadcast(msg PlayerMessage, close bool) {
 }
 
 func getJSONPlayerMessage(msg PlayerMessage) []byte {
-	value, err := json.Marshal(msg)
-	if err != nil {
-		log.Println("error marshalling: ", err)
-	}
-
-	return value
-}
-
-func createJSONMessage(command string) []byte {
-	action := strings.Trim(command, " ")
-	tokens := strings.Split(action, " ")
-
-	msg := &PlayerMessage{}
-
-	switch tokens[0] {
-	case "/file":
-		msg = &PlayerMessage{Action: "file", Payload: tokens[1], Recipient: ""}
-	default:
-		msg = &PlayerMessage{Action: "say", Payload: action, Recipient: ""}
-	}
-
 	value, err := json.Marshal(msg)
 	if err != nil {
 		log.Println("error marshalling: ", err)
@@ -120,7 +99,6 @@ func (be *beholder) whisper(msg PlayerMessage) {
 	p, ok := be.players[msg.Recipient]
 	msg.Action = "say"
 	if ok {
-		log.Printf("P ok: %s is %s\n", p.name, msg.Recipient)
 		err := p.conn.WriteMessage(websocket.TextMessage, getJSONPlayerMessage(msg))
 		if err != nil {
 			log.Println("write: ", err)
