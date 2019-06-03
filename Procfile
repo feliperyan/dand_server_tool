@@ -1,1 +1,1 @@
-web: bin/ddserver --addr $PORT
+web: bin/ddserver --port $PORT

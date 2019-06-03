@@ -15,7 +15,7 @@ import (
 )
 
 var oneEyedOne *beholder
-var addr = flag.String("PORT", "8080", "http service address")
+var addr = flag.String("port", "8080", "http service address")
 var upgrader = websocket.Upgrader{} // use default options
 
 // http.HandleFunc will spin up a new goroutine for this
