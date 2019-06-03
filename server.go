@@ -48,6 +48,7 @@ func receive(w http.ResponseWriter, r *http.Request) {
 			oneEyedOne.Messages <- *msg
 		} else {
 			log.Printf("Received a non text Message of type %d", mt)
+			oneEyedOne.audioChan <- Message
 		}
 	}
 	oneEyedOne.leaving <- &thisPlayer

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -24,21 +23,25 @@ type PlayerMessage struct {
 }
 
 type beholder struct {
-	players  map[string]*player
-	Messages chan PlayerMessage
-	joining  chan *player
-	leaving  chan *player
-	showRose chan os.Signal
-	dead     chan struct{}
+	players        map[string]*player
+	Messages       chan PlayerMessage
+	joining        chan *player
+	leaving        chan *player
+	showRose       chan os.Signal
+	dead           chan struct{}
+	audioChan      chan []byte
+	whoToSendAudio string
 }
 
 func spawnEvil() *beholder {
 	return &beholder{players: make(map[string]*player),
-		Messages: make(chan PlayerMessage),
-		joining:  make(chan *player),
-		leaving:  make(chan *player),
-		showRose: make(chan os.Signal, 1),
-		dead:     make(chan struct{}, 1)}
+		Messages:       make(chan PlayerMessage),
+		joining:        make(chan *player),
+		leaving:        make(chan *player),
+		showRose:       make(chan os.Signal, 1),
+		dead:           make(chan struct{}, 1),
+		audioChan:      make(chan []byte),
+		whoToSendAudio: ""}
 }
 
 func (be *beholder) broadcast(msg PlayerMessage, close bool) {
@@ -71,14 +74,21 @@ func getJSONPlayerMessage(msg PlayerMessage) []byte {
 	return value
 }
 
-func (be *beholder) broadcastFile(filePath string) {
-	dat, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Printf("Error opening file: %s\n", err)
-	}
+func (be *beholder) broadcastAudio(audioFile []byte) {
 
 	for _, p := range be.players {
-		err := p.conn.WriteMessage(websocket.BinaryMessage, dat)
+		// if sending to specific player
+		if be.whoToSendAudio != "" {
+			if p.name == be.whoToSendAudio {
+				err := p.conn.WriteMessage(websocket.BinaryMessage, audioFile)
+				if err != nil {
+					log.Println("error sending file: ", err)
+				}
+				be.whoToSendAudio = ""
+				return
+			}
+		}
+		err := p.conn.WriteMessage(websocket.BinaryMessage, audioFile)
 		if err != nil {
 			log.Println("error sending file: ", err)
 		}
@@ -126,8 +136,6 @@ func (be *beholder) processMessage(msg PlayerMessage) {
 		be.changeName(msg.Sender, msg.Payload)
 	case "list":
 		be.listPlayers(msg.Sender)
-	case "file":
-		be.broadcastFile(msg.Payload)
 	}
 
 }
@@ -143,11 +151,16 @@ func (be *beholder) openEye() {
 
 			case newPlayer := <-be.joining:
 				be.players[newPlayer.name] = newPlayer
+
 			case leavingPlayer := <-be.leaving:
 				delete(be.players, leavingPlayer.name)
+
 			case <-be.showRose: // kill the server
 				be.broadcast(PlayerMessage{}, true) // tell all clients to disconnect
 				break topFor
+
+			case sounds := <-be.audioChan:
+				be.broadcastAudio(sounds)
 			}
 		}
 		close(be.dead)
