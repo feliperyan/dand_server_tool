@@ -73,12 +73,11 @@ func monitorExit(allSeeing *beholder, notifyClose chan struct{}, srv *http.Serve
 }
 
 func main() {
-	fmt.Println("Starting...")
-
 	flag.Parse()
 	log.SetFlags(0)
 
-	theAddr := fmt.Sprintf("localhost:%s", *addr)
+	theAddr := fmt.Sprintf(":%s", *addr)
+	fmt.Println("Starting: ", theAddr)
 
 	servantOfOneEyedOne := &http.Server{Addr: theAddr, Handler: nil}
 	oneEyedOne = spawnEvil()
