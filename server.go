@@ -15,7 +15,7 @@ import (
 )
 
 var oneEyedOne *beholder
-var addr = flag.String("addr", "localhost:8080", "http service address")
+var addr = flag.String("PORT", "8080", "http service address")
 var upgrader = websocket.Upgrader{} // use default options
 
 // http.HandleFunc will spin up a new goroutine for this
@@ -78,7 +78,9 @@ func main() {
 	flag.Parse()
 	log.SetFlags(0)
 
-	servantOfOneEyedOne := &http.Server{Addr: *addr, Handler: nil}
+	theAddr := fmt.Sprintf("localhost:%s", *addr)
+
+	servantOfOneEyedOne := &http.Server{Addr: theAddr, Handler: nil}
 	oneEyedOne = spawnEvil()
 	oneEyedOne.openEye()
 
