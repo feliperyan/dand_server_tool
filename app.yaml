@@ -1,0 +1,14 @@
+runtime: go
+env: flex
+
+manual_scaling:
+  instances: 1
+
+resources:
+  cpu: 1 # minimum
+  memory_gb: 0.6 # cpu * [0.9 - 6.5] - 0.4
+  disk_size_gb: 10 # minimum
+
+# handlers:
+#   - url: /.*
+#     script: auto
