@@ -100,7 +100,7 @@ func (be *beholder) changeName(original string, newName string) {
 	be.players[newName] = be.players[original]
 	be.players[newName].name = newName
 	delete(be.players, original)
-	msg := PlayerMessage{Recipient: newName, Payload: fmt.Sprintf("name changed to: %s", newName), Sender: "Beholder"}
+	msg := PlayerMessage{Recipient: newName, Payload: fmt.Sprintf("Welcome %s", newName), Sender: "Beholder"}
 
 	be.whisper(msg)
 }
