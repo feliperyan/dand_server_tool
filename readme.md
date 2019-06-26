@@ -1,5 +1,5 @@
 # D&D DM Remote Server Tool 🧙
-## Golang Websocker server app. Easily deployable on Heroku or Google App Engine Flexible via Docker.
+## Golang Websocket server app. Easily deployable on Heroku or Google App Engine Flexible via Docker.
 
 > 🚨This project was a fun way for me to get more comfortable with Golang and most of all to grok Go routines and channels. It's very much in the _make it work_ phase 🍝 of the "make it work -> make it right -> make it fast" concept.
 
