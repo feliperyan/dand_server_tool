@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -31,9 +33,12 @@ type beholder struct {
 	dead           chan struct{}
 	audioChan      chan []byte
 	whoToSendAudio string
+	roller         *rand.Rand
 }
 
 func spawnEvil() *beholder {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	return &beholder{players: make(map[string]*player),
 		Messages:       make(chan PlayerMessage),
 		joining:        make(chan *player),
@@ -41,7 +46,9 @@ func spawnEvil() *beholder {
 		showRose:       make(chan os.Signal, 1),
 		dead:           make(chan struct{}, 1),
 		audioChan:      make(chan []byte),
-		whoToSendAudio: ""}
+		whoToSendAudio: "",
+		roller:         r,
+	}
 }
 
 func (be *beholder) broadcast(msg PlayerMessage, close bool) {
@@ -100,7 +107,7 @@ func (be *beholder) changeName(original string, newName string) {
 	be.players[newName] = be.players[original]
 	be.players[newName].name = newName
 	delete(be.players, original)
-	msg := PlayerMessage{Recipient: newName, Payload: fmt.Sprintf("Welcome %s", newName), Sender: "Beholder"}
+	msg := PlayerMessage{Recipient: newName, Payload: fmt.Sprintf("Welcome %s", newName), Sender: "DM"}
 
 	be.whisper(msg)
 }
@@ -126,6 +133,13 @@ func (be *beholder) listPlayers(playerName string) {
 	be.whisper(msg)
 }
 
+func (be *beholder) rollDice(msg PlayerMessage) {
+	result := be.roller.Intn(20) + 1
+	sender := be.players[msg.Sender]
+	m := PlayerMessage{Payload: fmt.Sprintf("%s rolls a: %v !", sender.name, result), Sender: "DM"}
+	be.broadcast(m, false)
+}
+
 func (be *beholder) processMessage(msg PlayerMessage) {
 	switch msg.Action {
 	case "say":
@@ -136,8 +150,9 @@ func (be *beholder) processMessage(msg PlayerMessage) {
 		be.changeName(msg.Sender, msg.Payload)
 	case "list":
 		be.listPlayers(msg.Sender)
+	case "d":
+		be.rollDice(msg)
 	}
-
 }
 
 func (be *beholder) openEye() {
