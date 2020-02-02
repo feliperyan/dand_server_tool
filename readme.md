@@ -7,3 +7,5 @@
 
 ### Server address
 Once you get the server up and running give the address to the players, minus any protocol prefixes (so don't add http or https). For example if you deploy this to Heroku and you get ```https://my-awesome-server.herokuapp.com``` give the players only this portion: ```my-awesome-server.herokuapp.com```.
+
+Trying to push to GCP
