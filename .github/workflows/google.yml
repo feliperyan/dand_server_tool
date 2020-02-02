@@ -1,0 +1,60 @@
+# This workflow will build a docker container, publish it to Google Container Registry, and deploy it to GKE.
+#
+# To configure this workflow:
+#
+# 1. Ensure that your repository contains the necessary configuration for your Google Kubernetes Engine cluster, including deployment.yml, kustomization.yml, service.yml, etc.
+#
+# 2. Set up secrets in your workspace: GCP_PROJECT with the name of the project, GCP_EMAIL with the service account email, GKE_KEY with the Base64 encoded JSON service account key (https://github.com/GoogleCloudPlatform/github-actions/tree/docs/service-account-key/setup-gcloud#inputs).
+#
+# 3. Change the values for the IMAGE, REGISTRY_HOSTNAME environment variables (below).
+
+name: Build and Push to GCP Container Registry
+
+on:
+  push:
+    branches:
+    - master
+
+# Environment variables available to all jobs and steps in this workflow
+env:
+  GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+  GCP_EMAIL: ${{ secrets.GCP_EMAIL }}
+  GITHUB_SHA: ${{ github.sha }}
+  IMAGE: gke-test
+  REGISTRY_HOSTNAME: gcr.io
+  DEPLOYMENT_NAME: gke-test
+
+jobs:
+  setup-build-publish:
+    name: Setup, Build, Publish
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    # Setup gcloud CLI
+    - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      with:
+        version: '270.0.0'
+        service_account_email: ${{ secrets.GCP_EMAIL }}
+        service_account_key: ${{ secrets.GKE_KEY }}
+
+    # Configure docker to use the gcloud command-line tool as a credential helper
+    - run: |
+        # Set up docker to authenticate
+        # via gcloud command-line tool.
+        gcloud auth configure-docker
+      
+    # Build the Docker image
+    - name: Build
+      run: |        
+        docker build -t "$REGISTRY_HOSTNAME"/"$GCP_PROJECT"/"$IMAGE":"$GITHUB_SHA" \
+          --build-arg GITHUB_SHA="$GITHUB_SHA" \
+          --build-arg GITHUB_REF="$GITHUB_REF" .
+
+    # Push the Docker image to Google Container Registry
+    - name: Publish
+      run: |
+        docker push $REGISTRY_HOSTNAME/$GCP_PROJECT/$IMAGE:$GITHUB_SHA
+    
